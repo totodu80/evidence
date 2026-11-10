@@ -481,6 +481,41 @@ async function afficherMesPhotos() {
 
       image.onload = () => URL.revokeObjectURL(url);
       zone.appendChild(image);
+      
+const boutonSupprimer = document.createElement('button');
+boutonSupprimer.type = 'button';
+boutonSupprimer.textContent = '🗑️ Supprimer cette photo';
+
+boutonSupprimer.onclick = async () => {
+  if (!confirm('Veux-tu vraiment supprimer cette photo ?')) return;
+
+  boutonSupprimer.disabled = true;
+
+  try {
+    const { error: erreurSuppression } = await client
+      .from('photos_profils')
+      .delete()
+      .eq('id', photo.id)
+      .eq('membre_id', user.id);
+
+    if (erreurSuppression) throw erreurSuppression;
+
+    const { error: erreurFichier } = await client.storage
+      .from('photos-profils')
+      .remove([photo.chemin]);
+
+    if (erreurFichier) throw erreurFichier;
+
+    message('Ta photo a été supprimée 🗑️');
+    await afficherMesPhotos();
+  } catch (error) {
+    report(error);
+    boutonSupprimer.disabled = false;
+  }
+};
+
+zone.appendChild(boutonSupprimer);
+
     }
   } catch (error) {
     zone.textContent = 'Impossible de charger les photos.';
