@@ -7,7 +7,7 @@
 <main><h2>Mes messages 💌</h2><p>Un espace de test pour échanger en privé entre membres.</p>
 <div class="toolbar"><a class="button" href="mon-profil.html">Mon profil</a><a class="button" href="decouvrir.html">Découvrir les membres</a><button id="refresh" disabled>Actualiser</button></div>
 <div id="status" class="notice" role="status" aria-live="polite">Initialisation…</div>
-<section class="panel"><h3>Écrire un message</h3><label for="recipient">Destinataire (profil visible)</label><select id="recipient" disabled><option value="">Chargement des membres…</option></select><label for="content">Ton message</label><textarea id="content" maxlength="2000" placeholder="Bonjour ! J’aimerais faire ta connaissance…"></textarea><p><small>Maximum 2 000 caractères. N'envoie pas de données sensibles pendant les essais.</small></p><button id="send" disabled>Envoyer 💌</button></section>
+<section class="panel"><h3>Écrire un message</h3><label for="recipient">Destinataire (profil visible ou conversation existante)</label><select id="recipient" disabled><option value="">Chargement des membres…</option></select><label for="content">Ton message</label><textarea id="content" maxlength="2000" placeholder="Bonjour ! J’aimerais faire ta connaissance…"></textarea><p><small>Maximum 2 000 caractères. N'envoie pas de données sensibles pendant les essais.</small></p><button id="send" disabled>Envoyer 💌</button></section>
 <section class="panel"><h3>Messages envoyés et reçus</h3><div id="messages">Aucun message chargé.</div></section>
 </main><footer>ÉVIDENCE · Espace de test · Respect et confidentialité.</footer>
 <script type="module">
@@ -18,9 +18,20 @@ function status(s,error=false){$('status').textContent=s;$('status').className='
 function errorText(e){return e?.message||String(e)}
 function addText(parent,tag,txt,cls){const el=document.createElement(tag);el.textContent=txt;if(cls)el.className=cls;parent.append(el);return el;}
 async function load(){if(!client||!user)return;$('refresh').disabled=true;$('send').disabled=true;status('Chargement des membres et des messages…');try{
-const {data:profiles,error:pe}=await client.from('profils').select('id,pseudo,profil_visible').eq('profil_visible',true).limit(100);if(pe)throw pe;
-names=new Map((profiles||[]).map(p=>[p.id,p.pseudo||'Membre']));const old=$('recipient').value;$('recipient').replaceChildren();const initial=document.createElement('option');initial.value='';initial.textContent='Choisir un membre';$('recipient').append(initial);for(const p of profiles||[]){if(p.id===user.id)continue;const option=document.createElement('option');option.value=p.id;option.textContent=p.pseudo||'Membre';$('recipient').append(option)}if(names.has(old)&&old!==user.id)$('recipient').value=old;$('recipient').disabled=$('recipient').options.length<=1;
 const {data:messages,error:me}=await client.from('messages').select('id,expediteur_id,destinataire_id,contenu,cree_le').order('cree_le',{ascending:false}).limit(100);if(me)throw me;
+const {data:profiles,error:pe}=await client.from('profils').select('id,pseudo,profil_visible').eq('profil_visible',true).limit(100);if(pe)throw pe;
+names=new Map((profiles||[]).map(p=>[p.id,p.pseudo||'Membre']));
+const recipients=new Map();
+for(const p of profiles||[]){if(p.id!==user.id)recipients.set(p.id,p.pseudo||'Membre')}
+// Les personnes qui nous ont écrit peuvent recevoir une réponse,
+// même si leur profil est privé. Ne pas les afficher dans la découverte publique.
+for(const m of messages||[]){if(m.destinataire_id===user.id && m.expediteur_id!==user.id && !recipients.has(m.expediteur_id)){
+  recipients.set(m.expediteur_id,'Conversation existante · membre privé');
+}}
+const old=$('recipient').value;$('recipient').replaceChildren();const initial=document.createElement('option');initial.value='';initial.textContent='Choisir un membre';$('recipient').append(initial);
+for(const [id,name] of recipients){const option=document.createElement('option');option.value=id;option.textContent=name;$('recipient').append(option)}
+if(recipients.has(old))$('recipient').value=old;
+$('recipient').disabled=recipients.size===0;
 $('messages').replaceChildren();if(!messages?.length)addText($('messages'),'p','Aucun message pour le moment.');else for(const m of messages){const row=document.createElement('article');row.className='message';const outgoing=m.expediteur_id===user.id;const partner=outgoing?m.destinataire_id:m.expediteur_id;const label=outgoing?'Envoyé à ':'Reçu de ';addText(row,'div',label+(names.get(partner)||'Membre')+' · '+new Date(m.cree_le).toLocaleString('fr-FR'),'meta');addText(row,'div',m.contenu,'body');$('messages').append(row)}
 $('send').disabled=$('recipient').disabled;status((messages?.length||0)+' message(s) chargé(s). Seuls tes échanges sont demandés à Supabase.');
 }catch(e){status('Erreur : '+errorText(e),true)}finally{$('refresh').disabled=false}}
