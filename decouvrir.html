@@ -31,7 +31,7 @@ async function loadProfiles(){
   if(!client)return;
   refresh.disabled=true;cards.replaceChildren();message('Recherche des profils visibles…');
   try{
-    const {data,error}=await client.from('profiles').select('pseudo,region,presentation,centres_interet').eq('profil_visible',true).order('created_at',{ascending:false}).limit(50);
+    const {data,error}=await client.from('profils').select('pseudo,region,presentation,centres_interet').eq('profil_visible',true).order('created_at',{ascending:false}).limit(50);
     if(error)throw error;
     if(!data?.length){message('Aucun profil visible pour le moment. Revenez bientôt ❤️');return;}
     for(const profile of data){const card=document.createElement('article');card.className='card';const name=document.createElement('h3');name.textContent=profile.pseudo||'Membre ÉVIDENCE';const region=document.createElement('p');region.className='region';region.textContent=profile.region||'Région non renseignée';card.append(name,region,field('Présentation',profile.presentation),field('Centres d’intérêt',profile.centres_interet));cards.append(card);}
