@@ -1,0 +1,349 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mon profil | ÉVIDENCE</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Arial, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #091326, #1b3050);
+      color: #f8f3e9;
+    }
+    header {
+      text-align: center;
+      padding: 32px 16px 20px;
+      border-bottom: 1px solid #b99552;
+    }
+    h1 {
+      color: #e5b65e;
+      letter-spacing: 6px;
+      margin: 0 0 12px;
+    }
+    .subtitle { color: #d8c5a4; }
+    main {
+      max-width: 650px;
+      margin: 35px auto;
+      padding: 0 18px 50px;
+    }
+    .card {
+      background: #111e36;
+      border: 1px solid #b99552;
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 15px 40px #0005;
+    }
+    h2 { color: #e5b65e; }
+    label {
+      display: block;
+      margin: 18px 0 8px;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 13px;
+      background: #091326;
+      color: white;
+      border: 1px solid #b99552;
+      border-radius: 9px;
+      font: inherit;
+    }
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 15px;
+      border: 1px solid #d6ae69;
+      border-radius: 9px;
+      background: #d6ae69;
+      color: #101b30;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button.secondary {
+      background: transparent;
+      color: #e5b65e;
+    }
+    button:disabled {
+      opacity: .6;
+      cursor: wait;
+    }
+    .hidden { display: none; }
+    .note {
+      color: #d0d6e0;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .message {
+      margin-top: 18px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #183d35;
+    }
+    .message.error { background: #642c35; }
+    a { color: #e5b65e; }
+    footer {
+      text-align: center;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>ÉVIDENCE</h1>
+    <div class="subtitle">Une belle histoire commence ici</div>
+  </header>
+
+  <main>
+    <div class="card">
+      <section id="setup">
+        <h2>Configuration</h2>
+        <p class="note">
+          Pour ce premier essai, indique uniquement la clé
+          publique Supabase de ton projet.
+          Ne colle jamais une clé secrète.
+        </p>
+        <label for="key">Clé publique Supabase</label>
+        <input id="key" type="text"
+          placeholder="sb_publishable_..."
+          autocomplete="off">
+        <button id="activate">Continuer</button>
+      </section>
+
+      <section id="login" class="hidden">
+        <h2>Bienvenue sur ÉVIDENCE ❤️</h2>
+        <p class="note">Connecte-toi pour retrouver ton profil.</p>
+
+        <label for="email">Adresse e-mail</label>
+        <input id="email" type="email" autocomplete="email">
+
+        <label for="password">Mot de passe</label>
+        <input id="password" type="password"
+          autocomplete="current-password">
+
+        <button id="signIn">Me connecter</button>
+      </section>
+
+      <section id="profile" class="hidden">
+        <h2>Mon profil amoureux ❤️</h2>
+        <p class="note">
+          Compte connecté : <span id="identity"></span>
+        </p>
+
+        <label for="pseudo">Mon pseudonyme</label>
+        <input id="pseudo" maxlength="30" minlength="2">
+
+        <label for="region">Ma région</label>
+        <input id="region" maxlength="80">
+
+        <label for="presentation">Ma présentation</label>
+        <textarea id="presentation" maxlength="500"
+          placeholder="Parle un peu de toi..."></textarea>
+
+        <label for="centres_interet">Mes centres d'intérêt</label>
+        <textarea id="centres_interet" maxlength="300"
+          placeholder="Voyages, musique, nature..."></textarea>
+
+        <button id="save">Enregistrer mon profil ❤️</button>
+        <button id="reload" class="secondary">
+          Actualiser mon profil
+        </button>
+        <button id="signOut" class="secondary">
+          Me déconnecter
+        </button>
+      </section>
+
+      <div id="status" class="message hidden"
+        role="status" aria-live="polite"></div>
+    </div>
+  </main>
+
+  <footer>
+    <p class="note">ÉVIDENCE — Espace de test privé</p>
+    <p><a href="./">Retour à l'accueil</a></p>
+  </footer>
+
+  <script type="module">
+    import { createClient } from
+      'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+    const PROJECT_URL =
+      'https://igzexxjobstgsrmfqldg.supabase.co';
+
+    const $ = id => document.getElementById(id);
+    let client = null;
+    let user = null;
+
+    function show(section) {
+      for (const id of ['setup', 'login', 'profile']) {
+        $(id).classList.toggle('hidden', id !== section);
+      }
+    }
+
+    function message(text, error = false) {
+      $('status').textContent = text;
+      $('status').className =
+        'message' + (error ? ' error' : '');
+    }
+
+    function report(error) {
+      message('Erreur : ' + (error.message || String(error)), true);
+    }
+
+    async function loadProfile() {
+      if (!client || !user) return;
+
+      const { data, error } = await client
+        .from('profils')
+        .select('pseudo,region,presentation,centres_interet')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (error) {
+        report(error);
+        return;
+      }
+
+      $('pseudo').value = data?.pseudo ?? '';
+      $('region').value = data?.region ?? '';
+      $('presentation').value = data?.presentation ?? '';
+      $('centres_interet').value = data?.centres_interet ?? '';
+
+      message(data
+        ? 'Ton profil a été retrouvé dans Supabase ❤️'
+        : 'Bienvenue ! Tu peux créer ton profil.');
+    }
+
+    async function showUser(account) {
+      user = account;
+
+      if (!user) {
+        show('login');
+        return;
+      }
+
+      $('identity').textContent = user.email || 'Membre connecté';
+      show('profile');
+      await loadProfile();
+    }
+
+    $('activate').onclick = async () => {
+      const key = $('key').value.trim();
+
+      if (!key.startsWith('sb_publishable_')) {
+        message('Utilise uniquement la clé publique sb_publishable_.', true);
+        return;
+      }
+
+      try {
+        client = createClient(PROJECT_URL, key, {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true
+          }
+        });
+
+        const { data, error } = await client.auth.getUser();
+
+        if (error && error.name !== 'AuthSessionMissingError') {
+          throw error;
+        }
+
+        await showUser(data.user);
+      } catch (error) {
+        report(error);
+      }
+    };
+
+    $('signIn').onclick = async () => {
+      if (!client) return;
+
+      $('signIn').disabled = true;
+
+      try {
+        const { data, error } =
+          await client.auth.signInWithPassword({
+            email: $('email').value.trim(),
+            password: $('password').value
+          });
+
+        if (error) throw error;
+
+        $('password').value = '';
+        await showUser(data.user);
+      } catch (error) {
+        report(error);
+      } finally {
+        $('signIn').disabled = false;
+      }
+    };
+
+    $('save').onclick = async () => {
+      if (!client || !user) return;
+
+      const pseudo = $('pseudo').value.trim();
+
+      if (pseudo.length < 2 || pseudo.length > 30) {
+        message('Le pseudonyme doit contenir 2 à 30 caractères.', true);
+        return;
+      }
+
+      $('save').disabled = true;
+
+      try {
+        const { error } = await client
+          .from('profils')
+          .upsert({
+            id: user.id,
+            pseudo,
+            region: $('region').value.trim() || null,
+            presentation: $('presentation').value.trim(),
+            centres_interet: $('centres_interet').value.trim()
+          }, { onConflict: 'id' });
+
+        if (error) throw error;
+
+        message('Ton profil a bien été enregistré ❤️');
+      } catch (error) {
+        report(error);
+      } finally {
+        $('save').disabled = false;
+      }
+    };
+
+    $('reload').onclick = loadProfile;
+
+    $('signOut').onclick = async () => {
+      if (!client) return;
+
+      try {
+        const { error } = await client.auth.signOut();
+        if (error) throw error;
+
+        user = null;
+        $('password').value = '';
+        $('pseudo').value = '';
+        $('region').value = '';
+        $('presentation').value = '';
+        $('centres_interet').value = '';
+
+        show('login');
+        message('Tu es déconnecté. À bientôt sur ÉVIDENCE ❤️');
+      } catch (error) {
+        report(error);
+      }
+    };
+  </script>
+</body>
+</html>
