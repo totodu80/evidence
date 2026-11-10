@@ -12,7 +12,13 @@
 <p class="notice">Cette page sert uniquement aux essais. Utilisez un pseudonyme fictif et une région approximative. N'inscrivez pas de données sensibles.</p>
 <section id="setup"><h2>Configuration du test</h2><p class="small">Collez uniquement la clé publique <strong>sb_publishable_</strong> de votre projet ÉVIDENCE. Elle n'est pas sauvegardée dans le fichier.</p><label for="key">Clé publique Supabase</label><input id="key" type="text" placeholder="sb_publishable_..." autocomplete="off" spellcheck="false"><button id="activate">Activer le test</button></section>
 <section id="login" class="hidden"><h2>Connexion</h2><label for="email">Adresse e-mail</label><input id="email" type="email" autocomplete="email"><label for="password">Mot de passe</label><input id="password" type="password" autocomplete="current-password"><button id="signIn">Me connecter</button></section>
-<section id="profile" class="hidden"><h2>Mon profil privé</h2><p class="small">Compte connecté : <span class="identity" id="identity"></span></p><label for="pseudo">Pseudonyme (2 à 30 caractères)</label><input id="pseudo" maxlength="30" minlength="2" autocomplete="off" placeholder="Ex. ÉtoileBleue"><label for="region">Région approximative (facultative)</label><input id="region" maxlength="80" autocomplete="off" placeholder="Ex. Hauts-de-France"><button id="save">Enregistrer mon profil</button><button id="reload" class="secondary">Relire mon profil depuis Supabase</button><button id="signOut" class="secondary">Me déconnecter</button></section>
+<section id="profile" class="hidden"><h2>Mon profil privé</h2><p class="small">Compte connecté : <span class="identity" id="identity"></span></p><label for="pseudo">Pseudonyme (2 à 30 caractères)</label><input id="pseudo" maxlength="30" minlength="2" autocomplete="off" placeholder="Ex. ÉtoileBleue"><label for="region">Région approximative (facultative)</label><input id="region" maxlength="80" autocomplete="off" placeholder="Ex. Hauts-de-France">
+<label for="presentation">Ma présentation</label>
+<textarea id="presentation" maxlength="500"></textarea>
+
+<label for="centres_interet">Mes centres d'intérêt</label>
+<textarea id="centres_interet" maxlength="300"></textarea>
+<button id="save">Enregistrer mon profil</button><button id="reload" class="secondary">Relire mon profil depuis Supabase</button><button id="signOut" class="secondary">Me déconnecter</button></section>
 <div id="status" class="message hidden" role="status" aria-live="polite"></div><p class="small"><a href="./">Retour au site ÉVIDENCE</a></p>
 </main>
 <script type="module">
@@ -23,11 +29,18 @@ function show(section){for(const id of ['setup','login','profile'])$(id).classLi
 function message(s,error=false){$('status').textContent=s;$('status').className='message '+(error?'error':'ok')}
 function err(e){message('Erreur : '+(e?.message||String(e)),true)}
 function busy(id,value){$(id).disabled=value}
-async function loadProfile(){if(!user)return;const {data,error}=await client.from('profils').select('pseudo,region').eq('id',user.id).maybeSingle();if(error){err(error);return} $('pseudo').value=data?.pseudo??'';$('region').value=data?.region??'';message(data?'Profil retrouvé dans Supabase. ❤️':'Aucun profil enregistré pour ce compte. Vous pouvez en créer un.')}
+async function loadProfile(){if(!user)return;const {data,error}=await client.from('profils').select('pseudo,region,presentation,centres_interet').eq('id',user.id).maybeSingle();if(error){err(error);return} $('pseudo').value=data?.pseudo??'';$('region').value=data?.region??'';$('presentation').value=data?.presentation??'';
+$('centres_interet').value=data?.centres_interet??'';message(data?'Profil retrouvé dans Supabase. ❤️':'Aucun profil enregistré pour ce compte. Vous pouvez en créer un.')}
 async function showUser(u){user=u;if(!u){show('login');return} $('identity').textContent=u.email||'Compte connecté';show('profile');await loadProfile()}
 $('activate').onclick=async()=>{const key=$('key').value.trim();if(!key.startsWith('sb_publishable_')){message('Veuillez utiliser uniquement la clé publique sb_publishable_ de votre projet ÉVIDENCE.',true);return}busy('activate',true);try{client=createClient(PROJECT_URL,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});const {data,error}=await client.auth.getUser();if(error&&error.name!=='AuthSessionMissingError')throw error;$('key').value='';await showUser(data?.user||null);if(!data?.user)message('Connexion à Supabase prête. Connectez-vous avec votre compte de test.')}catch(e){err(e)}finally{busy('activate',false)}};
 $('signIn').onclick=async()=>{if(!client)return;busy('signIn',true);try{const {data,error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;$('password').value='';await showUser(data.user);message('Connexion réussie. ❤️')}catch(e){err(e)}finally{busy('signIn',false)}};
-$('save').onclick=async()=>{if(!client||!user)return;const pseudo=$('pseudo').value.trim(),region=$('region').value.trim();if(pseudo.length<2||pseudo.length>30){message('Le pseudonyme doit contenir entre 2 et 30 caractères.',true);return}busy('save',true);try{const {error}=await client.from('profils').upsert({id:user.id,pseudo,region:region||null},{onConflict:'id'});if(error)throw error;message('Profil enregistré dans Supabase ! ❤️')}catch(e){err(e)}finally{busy('save',false)}};
+$('save').onclick=async()=>{if(!client||!user)return;const pseudo=$('pseudo').value.trim(),region=$('region').value.trim();if(pseudo.length<2||pseudo.length>30){message('Le pseudonyme doit contenir entre 2 et 30 caractères.',true);return}busy('save',true);try{const {error}=await client.from('profils').upsert({
+  id:user.id,
+  pseudo,
+  region:region||null,
+  presentation:$('presentation').value.trim(),
+  centres_interet:$('centres_interet').value.trim()
+},{onConflict:'id'});if(error)throw error;message('Profil enregistré dans Supabase ! ❤️')}catch(e){err(e)}finally{busy('save',false)}};
 $('reload').onclick=loadProfile;
 $('signOut').onclick=async()=>{if(!client)return;busy('signOut',true);try{const {error}=await client.auth.signOut();if(error)throw error;user=null;$('password').value='';$('pseudo').value='';$('region').value='';show('login');message('Déconnexion réussie. Votre profil reste enregistré dans Supabase.')}catch(e){err(e)}finally{busy('signOut',false)}};
 </script></body></html>
