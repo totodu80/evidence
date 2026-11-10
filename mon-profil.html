@@ -353,6 +353,80 @@ profil_visible: $('profil_visible').checked
 
     $('reload').onclick = loadProfile;
 
+$('ajouter-photo').onclick = async () => {
+  const bouton = $('ajouter-photo');
+  const fichier = $('photo-file').files[0];
+
+  if (!client || !user) {
+    message('Connecte-toi pour ajouter une photo.', true);
+    return;
+  }
+
+  if (!fichier) {
+    message('Choisis une photo avant de continuer.', true);
+    return;
+  }
+
+  const typesAutorises = [
+    'image/jpeg',
+    'image/png',
+    'image/webp'
+  ];
+
+  if (!typesAutorises.includes(fichier.type)) {
+    message('Choisis une image JPG, PNG ou WebP.', true);
+    return;
+  }
+
+  if (fichier.size > 5 * 1024 * 1024) {
+    message('La photo ne doit pas dépasser 5 Mo.', true);
+    return;
+  }
+
+  bouton.disabled = true;
+
+  try {
+    const extension = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp'
+    }[fichier.type];
+
+    const chemin =
+      user.id + '/' + crypto.randomUUID() + '.' + extension;
+
+    const { error: erreurEnvoi } = await client.storage
+      .from('photos-profils')
+      .upload(chemin, fichier, {
+        contentType: fichier.type,
+        upsert: false
+      });
+
+    if (erreurEnvoi) throw erreurEnvoi;
+
+    const { error: erreurBase } = await client
+      .from('photos_profils')
+      .insert({
+        membre_id: user.id,
+        chemin: chemin
+      });
+
+    if (erreurBase) {
+      await client.storage.from('photos-profils').remove([chemin]);
+      throw erreurBase;
+    }
+
+    $('photo-file').value = '';
+    message('Ta photo a bien été ajoutée ! 📸');
+
+  } catch (error) {
+    report(error);
+  } finally {
+    bouton.disabled = false;
+  }
+};
+
+    
     $('signOut').onclick = async () => {
       if (!client) return;
 
