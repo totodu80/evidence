@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ÉVIDENCE — Test d'inscription</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at top,#1b3153,#080f21 75%);color:#f6f0e4;font:16px system-ui,sans-serif;display:grid;place-items:center;padding:20px}.panel{width:min(100%,480px);border:1px solid #9b7b3c;border-radius:20px;padding:28px;background:#111d35;box-shadow:0 18px 55px #0008}h1{text-align:center;color:#e9c477;letter-spacing:.16em;margin:0}h2{font-size:1.2rem;margin:18px 0}p{line-height:1.55}.sub{text-align:center;color:#d6c6a5}.notice{background:#25334c;padding:12px;border-radius:10px;font-size:.9rem}label{display:block;margin-top:15px;margin-bottom:6px}input{width:100%;padding:12px;border:1px solid #8c7a5d;border-radius:9px;background:#071225;color:#fff;font:inherit}button{width:100%;margin-top:13px;padding:12px;background:#d6b56e;color:#101a2c;border:0;border-radius:9px;font-weight:700;font-size:1rem;cursor:pointer}button.secondary{background:transparent;border:1px solid #d6b56e;color:#f6e0a8}button:disabled{opacity:.6;cursor:wait}#message{white-space:pre-wrap;min-height:1.5em;margin-top:15px}#message.error{color:#ffb6b6}#message.ok{color:#b7f0c8}a{color:#e9c477}.small{font-size:.83rem;color:#d0c5b4}#member{display:none}
+</style>
+</head>
+<body><main class="panel"><h1>ÉVIDENCE</h1><p class="sub">Espace de test privé · Inscription</p><p class="notice">Cette page est uniquement destinée aux essais. N'utilisez pas de vraies données de profil amoureux.</p>
+<section id="setup"><h2>Configuration du test</h2><p class="small">Collez uniquement la clé <strong>sb_publishable_</strong> de votre projet ÉVIDENCE. Elle reste dans cet onglet et n'est pas enregistrée dans le fichier.</p><label for="key">Clé publique Supabase</label><input id="key" type="password" placeholder="sb_publishable_..." autocomplete="off"><button id="connect">Activer le test</button></section>
+<section id="auth" hidden><h2>Créer un compte ou se connecter</h2><label for="email">Adresse e-mail</label><input id="email" type="email" autocomplete="email" required placeholder="vous@exemple.fr"><label for="password">Mot de passe</label><input id="password" type="password" autocomplete="new-password" minlength="8" required placeholder="Au moins 8 caractères"><button id="signup">Créer mon compte de test</button><button class="secondary" id="signin">Me connecter</button><p class="small">Après l'inscription, ouvrez l'e-mail de confirmation Supabase. Revenez ensuite ici pour vous connecter.</p></section>
+<section id="member"><h2>Connexion réussie ❤️</h2><p id="identity"></p><button class="secondary" id="signout">Me déconnecter</button></section><p id="message" role="status" aria-live="polite"></p><p class="small"><a href="https://totodu80.github.io/evidence/">Retour au site ÉVIDENCE</a></p></main>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+const URL='https://igzexxjobstgsrmfqldg.supabase.co';
+let client=null;
+const el=id=>document.getElementById(id);
+function message(txt,error=false){el('message').textContent=txt;el('message').className=error?'error':'ok'}
+function busy(state){for(const id of ['connect','signup','signin','signout'])el(id).disabled=state}
+function showUser(user){el('member').style.display=user?'block':'none';el('auth').hidden=!!user;if(user)el('identity').textContent='Compte connecté : '+(user.email||'utilisateur de test')}
+function credentials(){const email=el('email').value.trim(),password=el('password').value;if(!email||!el('email').checkValidity())throw Error('Saisissez une adresse e-mail valide.');if(password.length<8)throw Error('Choisissez un mot de passe d’au moins 8 caractères.');return {email,password}}
+async function run(action){busy(true);try{await action()}catch(err){message(err.message||'Une erreur est survenue.',true)}finally{busy(false)}}
+el('connect').addEventListener('click',()=>run(async()=>{const key=el('key').value.trim();if(!key.startsWith('sb_publishable_'))throw Error('Collez la clé publique qui commence par sb_publishable_.');client=createClient(URL,key,{auth:{detectSessionInUrl:true,flowType:'pkce'}});const {data,error}=await client.auth.getUser();if(error&&error.name!=='AuthSessionMissingError')throw error;el('setup').hidden=true;el('auth').hidden=false;showUser(data.user);message('Connexion à Supabase prête. Vous pouvez tester une inscription.');}));
+el('signup').addEventListener('click',()=>run(async()=>{const {email,password}=credentials();const {data,error}=await client.auth.signUp({email,password,options:{emailRedirectTo:'https://totodu80.github.io/evidence/inscription-test.html'}});if(error)throw error;message(data.session?'Compte de test créé et connecté.':'Demande reçue. Consultez votre boîte e-mail et confirmez votre adresse avant de vous connecter.');if(data.session)showUser(data.user)}));
+el('signin').addEventListener('click',()=>run(async()=>{const {email,password}=credentials();const {data,error}=await client.auth.signInWithPassword({email,password});if(error)throw error;showUser(data.user);message('Connexion réussie !')}));
+el('signout').addEventListener('click',()=>run(async()=>{const {error}=await client.auth.signOut();if(error)throw error;showUser(null);message('Vous êtes déconnecté.')}));
+</script></body></html>
