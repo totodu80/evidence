@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Découvrir les membres | ÉVIDENCE</title>
+<style>
+:root{color-scheme:dark;font-family:Arial,sans-serif}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(135deg,#091326,#1b3050);color:#f8f3e9}header{text-align:center;padding:34px 16px 24px;border-bottom:1px solid #b99552}h1{color:#e5b65e;letter-spacing:6px;margin:0 0 10px}header p{color:#e5c88d;margin:0}main{max-width:1020px;margin:32px auto;padding:0 20px}h2{color:#e5b65e}a{color:#e5b65e}.intro{line-height:1.6;color:#e0e5ed}.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:22px 0}button,.button{border:1px solid #d6ae69;border-radius:9px;background:#d6ae69;color:#091326;padding:12px 17px;font-weight:bold;cursor:pointer;text-decoration:none;font-size:15px}button:disabled{opacity:.6;cursor:wait}.button.secondary{background:transparent;color:#e5b65e}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px}.card{background:#101f38;border:1px solid #9e7c43;border-radius:16px;padding:22px;overflow-wrap:anywhere}.card h3{color:#e5b65e;margin:0 0 8px}.region{color:#cdd5e3;font-size:14px;margin:0 0 20px}.label{color:#e5c88d;font-weight:bold;margin-bottom:5px}.value{white-space:pre-wrap;line-height:1.5;margin:0 0 18px}.notice{border-radius:10px;padding:16px;background:#24344f;line-height:1.6;margin:18px 0}.error{background:#532b35}.hidden{display:none}footer{text-align:center;padding:36px 12px;color:#b9c5d8;font-size:13px}code{color:#e5c88d}@media(max-width:540px){h1{font-size:27px}.toolbar>*{width:100%;text-align:center}}
+</style>
+</head>
+<body>
+<header><h1>ÉVIDENCE</h1><p>Une belle histoire commence ici ❤️</p></header>
+<main>
+<h2>Découvrir les membres ❤️</h2>
+<p class="intro">Rencontre les personnes qui ont choisi de rendre leur profil visible. Les profils privés restent confidentiels.</p>
+<div class="toolbar"><a class="button secondary" href="mon-profil.html">Mon profil</a><button id="refresh" type="button" disabled>Actualiser les profils</button></div>
+<div id="status" class="notice" role="status" aria-live="polite">Chargement…</div>
+<section id="cards" class="cards" aria-label="Profils visibles"></section>
+</main>
+<footer>ÉVIDENCE · Espace de test · Ne partagez pas de données personnelles sensibles.</footer>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+const PROJECT_URL = 'https://igzexxjobstgsrmfqldg.supabase.co';
+const status = document.getElementById('status');
+const cards = document.getElementById('cards');
+const refresh = document.getElementById('refresh');
+function message(text,error=false){status.textContent=text;status.className='notice'+(error?' error':'');}
+function field(label,value){const wrap=document.createElement('div');const title=document.createElement('p');title.className='label';title.textContent=label;const content=document.createElement('p');content.className='value';content.textContent=value||'Non renseigné';wrap.append(title,content);return wrap;}
+let client;
+async function loadProfiles(){
+  if(!client)return;
+  refresh.disabled=true;cards.replaceChildren();message('Recherche des profils visibles…');
+  try{
+    const {data,error}=await client.from('profiles').select('pseudo,region,presentation,centres_interet').eq('profil_visible',true).order('created_at',{ascending:false}).limit(50);
+    if(error)throw error;
+    if(!data?.length){message('Aucun profil visible pour le moment. Revenez bientôt ❤️');return;}
+    for(const profile of data){const card=document.createElement('article');card.className='card';const name=document.createElement('h3');name.textContent=profile.pseudo||'Membre ÉVIDENCE';const region=document.createElement('p');region.className='region';region.textContent=profile.region||'Région non renseignée';card.append(name,region,field('Présentation',profile.presentation),field('Centres d’intérêt',profile.centres_interet));cards.append(card);}
+    message(data.length+' profil'+(data.length>1?'s':'')+' visible'+(data.length>1?'s':'')+' ❤️');
+  }catch(e){message('Impossible de charger les profils : '+(e.message||String(e)),true);}finally{refresh.disabled=false;}
+}
+refresh.addEventListener('click',loadProfiles);
+try{
+  const key=prompt('Pour ce test, colle la clé publique Supabase (sb_publishable_… ou clé anon). Elle ne sera pas enregistrée dans ce fichier.');
+  if(!key?.trim()){message('Test non activé. Recharge la page pour saisir la clé publique Supabase.');}
+  else if(!key.trim().startsWith('sb_publishable_')&&!key.trim().startsWith('eyJ')){message('Utilise uniquement la clé publique Supabase (publishable ou anon), jamais la clé secrète.',true);}
+  else{
+    client=createClient(PROJECT_URL,key.trim(),{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+    const {data:{user},error}=await client.auth.getUser();
+    if(error&&error.name!=='AuthSessionMissingError')throw error;
+    if(!user){message('Connecte-toi d’abord sur « Mon profil », puis reviens ici. Si ta session est déjà ouverte, recharge cette page.');}
+    else await loadProfiles();
+  }
+}catch(e){message('Erreur : '+(e.message||String(e)),true);}
+</script>
+</body>
+</html>
