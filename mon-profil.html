@@ -5,7 +5,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Mon profil | ÉVIDENCE</title>
-  <style>
+input[type="checkbox"] {
+  width: auto;
+  margin-right: 10px;
+  accent-color: #d6ae69;
+}  <style>
     :root {
       color-scheme: dark;
       font-family: Arial, sans-serif;
@@ -154,7 +158,14 @@
         <textarea id="centres_interet" maxlength="300"
           placeholder="Voyages, musique, nature..."></textarea>
 
-        <button id="save">Enregistrer mon profil ❤️</button>
+      <label for="profil_visible">
+  <input id="profil_visible" type="checkbox">
+  Rendre mon profil visible aux autres membres
+</label>
+<p class="note">
+  Par défaut, mon profil reste privé.
+  Je peux changer ce choix à tout moment.
+</p>  <button id="save">Enregistrer mon profil ❤️</button>
         <button id="reload" class="secondary">
           Actualiser mon profil
         </button>
@@ -205,7 +216,7 @@
 
       const { data, error } = await client
         .from('profils')
-        .select('pseudo,region,presentation,centres_interet')
+        .select('pseudo,region,presentation,centres_interet,profil_visible')
         .eq('id', user.id)
         .maybeSingle();
 
@@ -217,6 +228,7 @@
       $('pseudo').value = data?.pseudo ?? '';
       $('region').value = data?.region ?? '';
       $('presentation').value = data?.presentation ?? '';
+      $('profil_visible').checked = data?.profil_visible ?? false;
       $('centres_interet').value = data?.centres_interet ?? '';
 
       message(data
@@ -309,7 +321,8 @@
             pseudo,
             region: $('region').value.trim() || null,
             presentation: $('presentation').value.trim(),
-            centres_interet: $('centres_interet').value.trim()
+            centres_interet: $('centres_interet').value.trim(),
+profil_visible: $('profil_visible').checked
           }, { onConflict: 'id' });
 
         if (error) throw error;
@@ -337,6 +350,7 @@
         $('region').value = '';
         $('presentation').value = '';
         $('centres_interet').value = '';
+        $('profil_visible').checked = false;
 
         show('login');
         message('Tu es déconnecté. À bientôt sur ÉVIDENCE ❤️');
