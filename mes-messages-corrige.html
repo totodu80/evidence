@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mes messages | ÉVIDENCE</title>
+<style>
+:root{font-family:Arial,sans-serif;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#091326,#1b3050);color:#f8f3e9;min-height:100vh}header{text-align:center;padding:30px 15px;border-bottom:1px solid #b99552}h1{color:#e5b65e;letter-spacing:6px;margin:0}header p{color:#e5c88d}main{max-width:920px;margin:35px auto;padding:0 18px}h2,h3{color:#e5b65e}a{color:#e5b65e}.panel{border:1px solid #9e7c43;border-radius:15px;background:#101f38;padding:22px;margin:18px 0}label{display:block;margin:12px 0 7px}input,textarea,select{width:100%;padding:12px;border-radius:8px;border:1px solid #b99552;background:#091326;color:white;font:inherit}textarea{min-height:110px;resize:vertical}button,.button{display:inline-block;background:#d6ae69;color:#091326;border:1px solid #d6ae69;padding:11px 16px;border-radius:8px;font-weight:bold;cursor:pointer;text-decoration:none;font:inherit}button:disabled{opacity:.55;cursor:not-allowed}.toolbar{display:flex;flex-wrap:wrap;gap:12px}.notice{background:#263753;border-radius:8px;padding:12px;margin:15px 0;overflow-wrap:anywhere}.notice.error{background:#582c39}.message{border-bottom:1px solid #34445f;padding:14px 0;overflow-wrap:anywhere}.message:last-child{border:0}.meta{color:#d6ae69;font-size:13px;margin-bottom:8px}.body{white-space:pre-wrap;overflow-wrap:anywhere}small{color:#c9d0db}footer{text-align:center;padding:32px 16px;color:#c9d0db;font-size:13px}
+</style></head><body>
+<header><h1>ÉVIDENCE</h1><p>Une belle histoire commence ici 💗</p></header>
+<main><h2>Mes messages 💌</h2><p>Un espace de test pour échanger en privé entre membres.</p>
+<div class="toolbar"><a class="button" href="mon-profil.html">Mon profil</a><a class="button" href="decouvrir.html">Découvrir les membres</a><button id="refresh" disabled>Actualiser</button></div>
+<div id="status" class="notice" role="status" aria-live="polite">Initialisation…</div>
+<section class="panel"><h3>Écrire un message</h3><label for="recipient">Destinataire (profil visible ou conversation existante)</label><select id="recipient" disabled><option value="">Chargement des membres…</option></select><label for="content">Ton message</label><textarea id="content" maxlength="2000" placeholder="Bonjour ! J’aimerais faire ta connaissance…"></textarea><p><small>Maximum 2 000 caractères. N'envoie pas de données sensibles pendant les essais.</small></p><button id="send" disabled>Envoyer 💌</button></section>
+<section class="panel"><h3>Messages envoyés et reçus</h3><div id="messages">Aucun message chargé.</div></section>
+</main><footer>ÉVIDENCE · Espace de test · Respect et confidentialité.</footer>
+<script type="module">
+import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+const PROJECT_URL='https://igzexxjobstgsrmfqldg.supabase.co';
+const $=id=>document.getElementById(id);let client,user;let names=new Map();
+function status(s,error=false){$('status').textContent=s;$('status').className='notice'+(error?' error':'');}
+function errorText(e){return e?.message||String(e)}
+function addText(parent,tag,txt,cls){const el=document.createElement(tag);el.textContent=txt;if(cls)el.className=cls;parent.append(el);return el;}
+async function load(){if(!client||!user)return;$('refresh').disabled=true;$('send').disabled=true;status('Chargement des membres et des messages…');try{
+const {data:messages,error:me}=await client.from('messages').select('id,expediteur_id,destinataire_id,contenu,cree_le').order('cree_le',{ascending:false}).limit(100);if(me)throw me;
+const {data:profiles,error:pe}=await client.from('profils').select('id,pseudo,profil_visible').eq('profil_visible',true).limit(100);if(pe)throw pe;
+names=new Map((profiles||[]).map(p=>[p.id,p.pseudo||'Membre']));
+const recipients=new Map();
+for(const p of profiles||[]){if(p.id!==user.id)recipients.set(p.id,p.pseudo||'Membre')}
+// Les personnes qui nous ont écrit peuvent recevoir une réponse,
+// même si leur profil est privé. Ne pas les afficher dans la découverte publique.
+for(const m of messages||[]){if(m.destinataire_id===user.id && m.expediteur_id!==user.id && !recipients.has(m.expediteur_id)){
+  recipients.set(m.expediteur_id,'Conversation existante · membre privé');
+}}
+const old=$('recipient').value;$('recipient').replaceChildren();const initial=document.createElement('option');initial.value='';initial.textContent='Choisir un membre';$('recipient').append(initial);
+for(const [id,name] of recipients){const option=document.createElement('option');option.value=id;option.textContent=name;$('recipient').append(option)}
+if(recipients.has(old))$('recipient').value=old;
+$('recipient').disabled=recipients.size===0;
+$('messages').replaceChildren();if(!messages?.length)addText($('messages'),'p','Aucun message pour le moment.');else for(const m of messages){const row=document.createElement('article');row.className='message';const outgoing=m.expediteur_id===user.id;const partner=outgoing?m.destinataire_id:m.expediteur_id;const label=outgoing?'Envoyé à ':'Reçu de ';addText(row,'div',label+(names.get(partner)||'Membre')+' · '+new Date(m.cree_le).toLocaleString('fr-FR'),'meta');addText(row,'div',m.contenu,'body');$('messages').append(row)}
+$('send').disabled=$('recipient').disabled;status((messages?.length||0)+' message(s) chargé(s). Seuls tes échanges sont demandés à Supabase.');
+}catch(e){status('Erreur : '+errorText(e),true)}finally{$('refresh').disabled=false}}
+$('refresh').onclick=load;
+$('send').onclick=async()=>{const recipient=$('recipient').value,content=$('content').value.trim();if(!recipient){status('Choisis un destinataire.',true);return}if(!content||content.length>2000){status('Écris un message de 1 à 2 000 caractères.',true);return}if(recipient===user.id){status('Tu ne peux pas t’écrire à toi-même.',true);return}$('send').disabled=true;try{const {error}=await client.from('messages').insert({expediteur_id:user.id,destinataire_id:recipient,contenu:content});if(error)throw error;$('content').value='';await load();status('Message envoyé 💌')}catch(e){status('Envoi impossible : '+errorText(e),true)}finally{$('send').disabled=$('recipient').disabled}};
+try{const key=prompt('Pour ce test, colle uniquement ta clé publique Supabase (sb_publishable_… ou anon). Ne colle jamais une clé secrète.');if(!key?.trim()){status('Recharge la page pour saisir ta clé publique Supabase.');}else if(!key.trim().startsWith('sb_publishable_')&&!key.trim().startsWith('eyJ')){status('Clé invalide : utilise uniquement la clé publique Supabase.',true)}else{client=createClient(PROJECT_URL,key.trim(),{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});const {data,error}=await client.auth.getUser();if(error&&error.name!=='AuthSessionMissingError')throw error;user=data.user;if(!user){status('Connecte-toi sur « Mon profil », puis reviens sur cette page.')}else await load()}}catch(e){status('Erreur : '+errorText(e),true)}
+</script></body></html>
