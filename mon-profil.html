@@ -187,7 +187,13 @@ input[type="checkbox"] {
 
   <button type="button" id="ajouter-photo">
     Ajouter une photo 📸
-  </button>
+    
+<h3>Mes photos ajoutées</h3>
+<div id="liste-photos">
+  <p>Aucune photo affichée pour le moment.</p>
+</div>
+
+ 
 </section>
 
       <div id="status" class="message hidden"
@@ -250,7 +256,9 @@ input[type="checkbox"] {
       message(data
         ? 'Ton profil a été retrouvé dans Supabase ❤️'
         : 'Bienvenue ! Tu peux créer ton profil.');
-    }
+   
+await afficherMesPhotos();
+ }
 
     async function showUser(account) {
       user = account;
@@ -419,6 +427,8 @@ $('ajouter-photo').onclick = async () => {
     $('photo-file').value = '';
     message('Ta photo a bien été ajoutée ! 📸');
 
+await afficherMesPhotos();
+
   } catch (error) {
     report(error);
   } finally {
@@ -427,6 +437,55 @@ $('ajouter-photo').onclick = async () => {
 };
 
     
+async function afficherMesPhotos() {
+  if (!client || !user) return;
+
+  const zone = $('liste-photos');
+  zone.textContent = 'Chargement des photos...';
+
+  try {
+    const { data, error } = await client
+      .from('photos_profils')
+      .select('id, chemin')
+      .eq('membre_id', user.id)
+      .order('cree_le', { ascending: false });
+
+    if (error) throw error;
+
+    zone.replaceChildren();
+
+    if (!data.length) {
+      zone.textContent = 'Tu n’as pas encore ajouté de photo.';
+      return;
+    }
+
+    for (const photo of data) {
+      const { data: fichier, error: erreurImage } =
+        await client.storage
+          .from('photos-profils')
+          .download(photo.chemin);
+
+      if (erreurImage) throw erreurImage;
+
+      const url = URL.createObjectURL(fichier);
+      const image = document.createElement('img');
+
+      image.src = url;
+      image.alt = 'Ma photo de profil';
+      image.style.width = '150px';
+      image.style.maxWidth = '100%';
+      image.style.borderRadius = '10px';
+      image.style.margin = '8px';
+
+      image.onload = () => URL.revokeObjectURL(url);
+      zone.appendChild(image);
+    }
+  } catch (error) {
+    zone.textContent = 'Impossible de charger les photos.';
+    report(error);
+  }
+}
+
     $('signOut').onclick = async () => {
       if (!client) return;
 
