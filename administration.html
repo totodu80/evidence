@@ -123,7 +123,7 @@ document.getElementById("admin-login").onclick = async () => {
   });
 
   if (error) {
-    message.textContent = "Connexion impossible. Vérifie tes identifiants.";
+    message.textContent = "Erreur : " + error.message;
     return;
   }
 
