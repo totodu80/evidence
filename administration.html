@@ -75,9 +75,9 @@
 
     try {
       const { data: sessionData, error: sessionError } =
-        await db.auth.getUser();
+        await db.auth.getSession();
 
-      if (sessionError || !sessionData.user) {
+      if (sessionError || !sessionData.session?.user) {
         verification.textContent =
           "🔒 Accès réservé. Connectez-vous à ÉVIDENCE.";
         return;
