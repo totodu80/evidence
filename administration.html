@@ -47,7 +47,15 @@
     <section id="verification">
       <p>Vérification des droits administrateur à venir…</p>
     </section>
-
+<section id="connexion-admin">
+  <h2>Connexion administrateur ❤️</h2>
+  <p>Adresse e-mail</p>
+  <input id="admin-email" type="email">
+  <p>Mot de passe</p>
+  <input id="admin-password" type="password">
+  <button id="admin-login">Me connecter</button>
+  <p id="admin-message"></p>
+</section>
     <section id="moderation" hidden>
       <h2>📸 Modération des photos</h2>
       <div id="liste-photos"></div>
@@ -102,7 +110,26 @@
       console.error(erreur);
     }
   }
+document.getElementById("admin-login").onclick = async () => {
+  const email = document.getElementById("admin-email").value.trim();
+  const password = document.getElementById("admin-password").value;
+  const message = document.getElementById("admin-message");
 
+  message.textContent = "Connexion en cours...";
+
+  const { error } = await db.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    message.textContent = "Connexion impossible. Vérifie tes identifiants.";
+    return;
+  }
+
+  message.textContent = "";
+  await verifierAdministrateur();
+};
   verifierAdministrateur();
 </script>
 </body>
