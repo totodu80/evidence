@@ -111,7 +111,7 @@ input[type="checkbox"] {
 
   <main>
     <div class="card">
-      <section id="setup">
+      <section id="setup" class="hidden">
         <h2>Configuration</h2>
         <p class="note">
           Pour ce premier essai, indique uniquement la clé
@@ -125,7 +125,7 @@ input[type="checkbox"] {
         <button id="activate">Continuer</button>
       </section>
 
-      <section id="login" class="hidden">
+      <section id="login">
         <h2>Bienvenue sur ÉVIDENCE ❤️</h2>
         <p class="note">Connecte-toi pour retrouver ton profil.</p>
 
@@ -214,7 +214,7 @@ input[type="checkbox"] {
 
     const PROJECT_URL =
       'https://igzexxjobstgsrmfqldg.supabase.co';
-
+const PUBLIC_KEY = "sb_publishable_WWC1UZCeMSZu1Yacawquew_MzPJWup_";
     const $ = id => document.getElementById(id);
     let client = null;
     let user = null;
@@ -275,8 +275,8 @@ await afficherMesPhotos();
       await loadProfile();
     }
 
-    $('activate').onclick = async () => {
-      const key = $('key').value.trim();
+    (async () => {
+      const key = PUBLIC_KEY;
 
       if (!key.startsWith('sb_publishable_')) {
         message('Utilise uniquement la clé publique sb_publishable_.', true);
@@ -302,7 +302,7 @@ await afficherMesPhotos();
       } catch (error) {
         report(error);
       }
-    };
+   })();
 
     $('signIn').onclick = async () => {
       if (!client) return;
