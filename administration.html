@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -27,6 +28,16 @@
       color: #d6ae68;
     }
 
+    input {
+      display: block;
+      box-sizing: border-box;
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0 16px;
+      border-radius: 8px;
+      border: 1px solid #d6ae68;
+    }
+
     button {
       padding: 12px 18px;
       background: #d6ae68;
@@ -35,6 +46,26 @@
       border-radius: 8px;
       cursor: pointer;
       font-weight: bold;
+    }
+
+    .photo {
+      padding: 15px;
+      margin: 18px 0;
+      border: 1px solid #d6ae68;
+      border-radius: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .photo img {
+      display: block;
+      width: 220px;
+      max-width: 100%;
+      margin-top: 12px;
+      border-radius: 10px;
+    }
+
+    #admin-message, #verification {
+      margin: 15px 0;
     }
   </style>
 </head>
@@ -45,92 +76,192 @@
     <p>Espace réservé à la modération des membres.</p>
 
     <section id="verification">
-      <p>Vérification des droits administrateur à venir…</p>
+      Vérification de votre accès...
     </section>
-<section id="connexion-admin">
-  <h2>Connexion administrateur ❤️</h2>
-  <p>Adresse e-mail</p>
-  <input id="admin-email" type="email">
-  <p>Mot de passe</p>
-  <input id="admin-password" type="password">
-  <button id="admin-login">Me connecter</button>
-  <p id="admin-message"></p>
-</section>
+
+    <section id="connexion-admin">
+      <h2>Connexion administrateur</h2>
+
+      <label for="admin-email">Adresse e-mail</label>
+      <input id="admin-email" type="email" autocomplete="username">
+
+      <label for="admin-password">Mot de passe</label>
+      <input id="admin-password" type="password"
+             autocomplete="current-password">
+
+      <button id="admin-login">Me connecter</button>
+      <p id="admin-message"></p>
+    </section>
+
     <section id="moderation" hidden>
       <h2>📸 Modération des photos</h2>
-      <div id="liste-photos"></div>
+      <div id="liste-photos">Chargement...</div>
     </section>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL =
+      "https://igzexxjobstgsrmfqldg.supabase.co";
 
-<script>
-  const SUPABASE_URL = "https://igzexxjobstgsrmfqldg.supabase.co";
-  const SUPABASE_KEY = "sb_publishable_WWC1UZCeMSZu1Yacawquew_MzPJWup_";
+    const SUPABASE_KEY =
+      "sb_publishable_WWC1UZCeMSZu1Yacawquew_MzPJWup_";
 
-  const db = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY,
-{ auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }
-  );
+    const db = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY,
+      {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true
+        }
+      }
+    );
 
-  async function verifierAdministrateur() {
     const verification = document.getElementById("verification");
+    const connexion = document.getElementById("connexion-admin");
     const moderation = document.getElementById("moderation");
+    const zonePhotos = document.getElementById("liste-photos");
+    const message = document.getElementById("admin-message");
 
-    verification.textContent = "Vérification de votre accès…";
-    moderation.hidden = true;
+    const imagesTemporaires = [];
 
-    try {
-      const { data: sessionData, error: sessionError } =
-        await db.auth.getSession();
+    async function chargerPhotos() {
+      zonePhotos.textContent = "Chargement des photos...";
 
-      if (sessionError || !sessionData.session?.user) {
-        verification.textContent =
-          "🔒 Accès réservé. Connectez-vous à ÉVIDENCE.";
+      imagesTemporaires.forEach(url => URL.revokeObjectURL(url));
+      imagesTemporaires.length = 0;
+
+      const { data: photos, error } = await db
+        .from("photos_profils")
+        .select("id, membre_id, chemin, cree_le")
+        .order("cree_le", { ascending: false });
+
+      if (error) {
+        zonePhotos.textContent =
+          "Erreur lors du chargement : " + error.message;
         return;
       }
 
-      const { data: autorise, error } =
-        await db.rpc("est_administrateur");
+      zonePhotos.replaceChildren();
 
-      if (error || autorise !== true) {
-        verification.textContent =
-          "⛔ Accès refusé : vous n'êtes pas administrateur.";
+      if (!photos || photos.length === 0) {
+        zonePhotos.textContent = "Aucune photo enregistrée.";
         return;
       }
 
-      verification.textContent = "✅ Accès administrateur autorisé.";
-      moderation.hidden = false;
+      for (const photo of photos) {
+        const carte = document.createElement("article");
+        carte.className = "photo";
 
-    } catch (erreur) {
-      verification.textContent =
-        "Impossible de vérifier les droits administrateur.";
-      console.error(erreur);
+        const membre = document.createElement("p");
+        membre.textContent = "Membre : " + photo.membre_id;
+        carte.appendChild(membre);
+
+        const { data: fichier, error: erreurImage } =
+          await db.storage
+            .from("photos-profils")
+            .download(photo.chemin);
+
+        if (erreurImage) {
+          const erreur = document.createElement("p");
+          erreur.textContent =
+            "Image indisponible : " + erreurImage.message;
+          carte.appendChild(erreur);
+        } else {
+          const url = URL.createObjectURL(fichier);
+          imagesTemporaires.push(url);
+
+          const image = document.createElement("img");
+          image.src = url;
+          image.alt = "Photo du membre";
+          carte.appendChild(image);
+        }
+
+        zonePhotos.appendChild(carte);
+      }
     }
-  }
-document.getElementById("admin-login").onclick = async () => {
-  const email = document.getElementById("admin-email").value.trim();
-  const password = document.getElementById("admin-password").value;
-  const message = document.getElementById("admin-message");
 
-  message.textContent = "Connexion en cours...";
+    async function verifierAdministrateur() {
+      verification.textContent =
+        "Vérification de votre accès...";
 
-  const { error } = await db.auth.signInWithPassword({
-    email,
-    password
-  });
+      moderation.hidden = true;
 
-  if (error) {
-    message.textContent = "Erreur : " + error.message;
-    return;
-  }
+      try {
+        const { data: sessionData, error: sessionError } =
+          await db.auth.getSession();
 
-  message.textContent = "";
-  await verifierAdministrateur();
-};
-  verifierAdministrateur();
-</script>
+        if (sessionError || !sessionData.session?.user) {
+          verification.textContent =
+            "🔒 Connectez-vous pour accéder à l'administration.";
+          connexion.hidden = false;
+          return;
+        }
+
+        const { data: autorise, error } =
+          await db.rpc("est_administrateur");
+
+        if (error) {
+          verification.textContent =
+            "Erreur de vérification : " + error.message;
+          return;
+        }
+
+        if (autorise !== true) {
+          verification.textContent =
+            "⛔ Accès refusé : vous n'êtes pas administrateur.";
+          return;
+        }
+
+        verification.textContent =
+          "✅ Accès administrateur autorisé.";
+
+        connexion.hidden = true;
+        moderation.hidden = false;
+
+        await chargerPhotos();
+
+      } catch (erreur) {
+        verification.textContent =
+          "Erreur : " + erreur.message;
+      }
+    }
+
+    document.getElementById("admin-login").onclick =
+      async () => {
+
+        const email =
+          document.getElementById("admin-email").value.trim();
+
+        const password =
+          document.getElementById("admin-password").value;
+
+        if (!email || !password) {
+          message.textContent =
+            "Veuillez renseigner votre e-mail et votre mot de passe.";
+          return;
+        }
+
+        message.textContent = "Connexion en cours...";
+
+        const { error } = await db.auth.signInWithPassword({
+          email,
+          password
+        });
+
+        if (error) {
+          message.textContent = "Erreur : " + error.message;
+          return;
+        }
+
+        message.textContent = "";
+        await verifierAdministrateur();
+      };
+
+    verifierAdministrateur();
+  </script>
 </body>
 </html>
