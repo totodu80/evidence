@@ -53,5 +53,56 @@
       <div id="liste-photos"></div>
     </section>
   </main>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+  const SUPABASE_URL = "https://igzexxjobstgsrmfgldg.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_WWC1UZCeMSZu1Yacawquew_MzPJWup_";
+
+  const db = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
+
+  async function verifierAdministrateur() {
+    const verification = document.getElementById("verification");
+    const moderation = document.getElementById("moderation");
+
+    verification.textContent = "Vérification de votre accès…";
+    moderation.hidden = true;
+
+    try {
+      const { data: sessionData, error: sessionError } =
+        await db.auth.getUser();
+
+      if (sessionError || !sessionData.user) {
+        verification.textContent =
+          "🔒 Accès réservé. Connectez-vous à ÉVIDENCE.";
+        return;
+      }
+
+      const { data: autorise, error } =
+        await db.rpc("est_administrateur");
+
+      if (error || autorise !== true) {
+        verification.textContent =
+          "⛔ Accès refusé : vous n'êtes pas administrateur.";
+        return;
+      }
+
+      verification.textContent = "✅ Accès administrateur autorisé.";
+      moderation.hidden = false;
+
+    } catch (erreur) {
+      verification.textContent =
+        "Impossible de vérifier les droits administrateur.";
+      console.error(erreur);
+    }
+  }
+
+  verifierAdministrateur();
+</script>
 </body>
 </html>
