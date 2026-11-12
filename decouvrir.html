@@ -59,10 +59,10 @@ for (const profile of data) {
   // Rechercher uniquement les photos approuvées
   const { data: photos, error: erreurPhotos } = await client
     .from('photos_profils')
-    .select('chemin')
+    .select('chemin, est_principale')
     .eq('membre_id', profile.id)
-    .eq('statut', 'approuvee');
-
+    .eq('statut', 'approuve')
+.order('est_principale', { ascending: false });
   if (!erreurPhotos && photos) {
     for (const photo of photos) {
       const { data: fichier, error: erreurImage } =
