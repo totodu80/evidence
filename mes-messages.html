@@ -14,6 +14,7 @@
 <script type="module">
 import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 const PROJECT_URL='https://igzexxjobstgsrmfqldg.supabase.co';
+const PROJECT_KEY='sb_publishable_WWC1UZCeMSZu1Yacawquew_MzPJWup_';
 const $=id=>document.getElementById(id);let client,user;let names=new Map();let blockedIds=new Set();let recipients=new Map();
 function status(s,error=false){$('status').textContent=s;$('status').className='notice'+(error?' error':'');}
 function errorText(e){return e?.message||String(e)}
@@ -75,5 +76,29 @@ updateBlockUI();status((messages?.length||0)+' message(s) chargé(s). Seuls tes 
 }catch(e){status('Erreur : '+errorText(e),true)}finally{$('refresh').disabled=false}}
 $('refresh').onclick=load;
 $('send').onclick=async()=>{const recipient=$('recipient').value,content=$('content').value.trim();if(!recipient){status('Choisis un destinataire.',true);return}if(!content||content.length>2000){status('Écris un message de 1 à 2 000 caractères.',true);return}if(recipient===user.id){status('Tu ne peux pas t’écrire à toi-même.',true);return}if(blockedIds.has(recipient)){status('Tu as bloqué ce membre. Débloque-le pour écrire.',true);return}$('send').disabled=true;try{const {error}=await client.from('messages').insert({expediteur_id:user.id,destinataire_id:recipient,contenu:content});if(error)throw error;$('content').value='';await load();status('Message envoyé 💌')}catch(e){status('Envoi impossible : '+errorText(e),true)}finally{updateBlockUI()}};
-try{const key=prompt('Pour ce test, colle uniquement ta clé publique Supabase (sb_publishable_… ou anon). Ne colle jamais une clé secrète.');if(!key?.trim()){status('Recharge la page pour saisir ta clé publique Supabase.');}else if(!key.trim().startsWith('sb_publishable_')&&!key.trim().startsWith('eyJ')){status('Clé invalide : utilise uniquement la clé publique Supabase.',true)}else{client=createClient(PROJECT_URL,key.trim(),{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});const {data,error}=await client.auth.getUser();if(error&&error.name!=='AuthSessionMissingError')throw error;user=data.user;if(!user){status('Connecte-toi sur « Mon profil », puis reviens sur cette page.')}else await load()}}catch(e){status('Erreur : '+errorText(e),true)}
+try {
+  client = createClient(PROJECT_URL, PROJECT_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
+  });
+
+  const { data, error } = await client.auth.getUser();
+
+  if (error && error.name !== 'AuthSessionMissingError') {
+    throw error;
+  }
+
+  user = data.user;
+
+  if (!user) {
+    status('Connecte-toi sur « Mon profil », puis reviens sur cette page.');
+  } else {
+    await load();
+  }
+} catch (e) {
+  status('Erreur : ' + errorText(e), true);
+}
 </script></body></html>
