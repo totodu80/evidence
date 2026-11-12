@@ -136,7 +136,7 @@
 
       const { data: photos, error } = await db
         .from("photos_profils")
-        .select("id, membre_id, chemin, cree_le")
+        .select("id, membre_id, chemin, cree_le, statut")
         .order("cree_le", { ascending: false });
 
       if (error) {
@@ -178,6 +178,15 @@
           image.src = url;
           image.alt = "Photo du membre";
           carte.appendChild(image);
+          const statutPhoto = document.createElement("p");
+
+statutPhoto.textContent =
+  "Statut : " +
+  (photo.statut === "approuvee" ? "🟢 Approuvée" :
+   photo.statut === "refusee" ? "🔴 Refusée" :
+   "🟠 En attente");
+
+carte.appendChild(statutPhoto);
         }
 const boutons = document.createElement("div");
 
