@@ -35,7 +35,58 @@ async function loadProfiles(){
     const {data,error}=await client.from('profils').select('id,pseudo,region,presentation,centres_interet').eq('profil_visible',true).order('created_at',{ascending:false}).limit(50);
     if(error)throw error;
     if(!data?.length){message('Aucun profil visible pour le moment. Revenez bientôt ❤️');return;}
-    for(const profile of data){const card=document.createElement('article');card.className='card';const name=document.createElement('h3');name.textContent=profile.pseudo||'Membre ÉVIDENCE';const region=document.createElement('p');region.className='region';region.textContent=profile.region||'Région non renseignée';card.append(name,region,field('Présentation',profile.presentation),field('Centres d’intérêt',profile.centres_interet));cards.append(card);}
+    
+for (const profile of data) {
+  const card = document.createElement('article');
+  card.className = 'card';
+
+  const name = document.createElement('h3');
+  name.textContent = profile.pseudo || 'Membre ÉVIDENCE';
+
+  const region = document.createElement('p');
+  region.className = 'region';
+  region.textContent = profile.region || 'Région non renseignée';
+
+  card.append(
+    name,
+    region,
+    field('Présentation', profile.presentation),
+    field('Centres d’intérêt', profile.centres_interet)
+  );
+
+  cards.append(card);
+
+  // Rechercher uniquement les photos approuvées
+  const { data: photos, error: erreurPhotos } = await client
+    .from('photos_profils')
+    .select('chemin')
+    .eq('membre_id', profile.id)
+    .eq('statut', 'approuvee');
+
+  if (!erreurPhotos && photos) {
+    for (const photo of photos) {
+      const { data: fichier, error: erreurImage } =
+        await client.storage
+          .from('photos-profils')
+          .download(photo.chemin);
+
+      if (erreurImage || !fichier) continue;
+
+      const image = document.createElement('img');
+      const url = URL.createObjectURL(fichier);
+
+      image.src = url;
+      image.alt = 'Photo approuvée du membre';
+      image.style.width = '150px';
+      image.style.borderRadius = '10px';
+      image.style.margin = '8px';
+      image.onload = () => URL.revokeObjectURL(url);
+
+      card.appendChild(image);
+    }
+  }
+}
+
     message(data.length+' profil'+(data.length>1?'s':'')+' visible'+(data.length>1?'s':'')+' ❤️');
   }catch(e){message('Impossible de charger les profils : '+(e.message||String(e)),true);}finally{refresh.disabled=false;}
 }
