@@ -448,7 +448,7 @@ async function afficherMesPhotos() {
   try {
     const { data, error } = await client
       .from('photos_profils')
-      .select('id, chemin')
+      .select('id, chemin, est_principale')
       .eq('membre_id', user.id)
       .order('cree_le', { ascending: false });
 
@@ -481,7 +481,43 @@ async function afficherMesPhotos() {
 
       image.onload = () => URL.revokeObjectURL(url);
       zone.appendChild(image);
-      
+      const boutonPrincipal = document.createElement('button');
+boutonPrincipal.type = 'button';
+
+boutonPrincipal.textContent = photo.est_principale
+  ? '⭐ Photo principale'
+  : '☆ Choisir comme photo principale';
+
+boutonPrincipal.disabled = !!photo.est_principale;
+
+boutonPrincipal.onclick = async () => {
+  boutonPrincipal.disabled = true;
+
+  try {
+    const { error: erreurAncienne } = await client
+  .from('photos_profils')
+  .update({ est_principale: false })
+  .eq('membre_id', user.id)
+  .eq('est_principale', true);
+
+if (erreurAncienne) throw erreurAncienne;
+    const { error } = await client
+      .from('photos_profils')
+      .update({ est_principale: true })
+      .eq('id', photo.id)
+      .eq('membre_id', user.id);
+
+    if (error) throw error;
+
+    message('Photo principale choisie ⭐');
+    await afficherMesPhotos();
+  } catch (error) {
+    report(error);
+    boutonPrincipal.disabled = false;
+  }
+};
+
+zone.appendChild(boutonPrincipal);
 const boutonSupprimer = document.createElement('button');
 boutonSupprimer.type = 'button';
 boutonSupprimer.textContent = '🗑️ Supprimer cette photo';
@@ -492,6 +528,7 @@ boutonSupprimer.onclick = async () => {
   boutonSupprimer.disabled = true;
 
   try {
+    
     const { error: erreurSuppression } = await client
       .from('photos_profils')
       .delete()
