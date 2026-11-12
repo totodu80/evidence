@@ -70,7 +70,10 @@ for (const profile of data) {
           .from('photos-profils')
           .download(photo.chemin);
 
-      if (erreurImage || !fichier) continue;
+      if (erreurImage || !fichier) {
+  console.error('Erreur de chargement photo :', photo.chemin, erreurImage);
+  continue;
+}
 
       const image = document.createElement('img');
       const url = URL.createObjectURL(fichier);
