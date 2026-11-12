@@ -103,7 +103,9 @@ client = createClient(PROJECT_URL, PUBLIC_KEY, {
     detectSessionInUrl: true
   }
 });
+  
     const {data:{user},error}=await client.auth.getUser();
+  console.log('Compte connecté :', user?.id);
     if(error&&error.name!=='AuthSessionMissingError')throw error;
     if(!user){message('Connecte-toi d’abord sur « Mon profil », puis reviens ici. Si ta session est déjà ouverte, recharge cette page.');}
     else await loadProfiles();
