@@ -179,7 +179,49 @@
           image.alt = "Photo du membre";
           carte.appendChild(image);
         }
+const boutons = document.createElement("div");
 
+const approuver = document.createElement("button");
+approuver.textContent = "✅ Approuver";
+approuver.type = "button";
+
+approuver.onclick = async () => {
+  const { error } = await db
+    .from("photos_profils")
+    .update({ statut: "approuvee" })
+    .eq("id", photo.id);
+
+  if (error) {
+    alert("Erreur : " + error.message);
+    return;
+  }
+
+  alert("Photo approuvée ❤️");
+  await chargerPhotos();
+};
+
+const refuser = document.createElement("button");
+refuser.textContent = "❌ Refuser";
+refuser.type = "button";
+
+refuser.onclick = async () => {
+  const { error } = await db
+    .from("photos_profils")
+    .update({ statut: "refusee" })
+    .eq("id", photo.id);
+
+  if (error) {
+    alert("Erreur : " + error.message);
+    return;
+  }
+
+  alert("Photo refusée.");
+  await chargerPhotos();
+};
+
+boutons.appendChild(approuver);
+boutons.appendChild(refuser);
+carte.appendChild(boutons);
         zonePhotos.appendChild(carte);
       }
     }
