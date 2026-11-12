@@ -61,7 +61,7 @@ for (const profile of data) {
     .from('photos_profils')
     .select('chemin, est_principale')
     .eq('membre_id', profile.id)
-    .eq('statut', 'approuve')
+    .eq('statut', 'approuvee')
 .order('est_principale', { ascending: false });
   console.log('Résultat des photos :', { photos, erreurPhotos });
   if (!erreurPhotos && photos) {
