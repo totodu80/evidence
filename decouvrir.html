@@ -52,7 +52,7 @@ client = createClient(PROJECT_URL, PUBLIC_KEY, {
     if(error&&error.name!=='AuthSessionMissingError')throw error;
     if(!user){message('Connecte-toi d’abord sur « Mon profil », puis reviens ici. Si ta session est déjà ouverte, recharge cette page.');}
     else await loadProfiles();
-  }
+  
 }catch(e){message('Erreur : '+(e.message||String(e)),true);}
 </script>
 </body>
