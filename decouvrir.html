@@ -20,7 +20,8 @@
 <footer>ÉVIDENCE · Espace de test · Ne partagez pas de données personnelles sensibles.</footer>
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-const PROJECT_URL = 'https://igzexxjobstgsrmfqldg.supabase.co';
+
+const PUBLIC_KEY = "sb_publishable_WWC1UZCeMSZu1Yacawquew_MzPJWup_";
 const status = document.getElementById('status');
 const cards = document.getElementById('cards');
 const refresh = document.getElementById('refresh');
@@ -40,11 +41,13 @@ async function loadProfiles(){
 }
 refresh.addEventListener('click',loadProfiles);
 try{
-  const key=prompt('Pour ce test, colle la clé publique Supabase (sb_publishable_… ou clé anon). Elle ne sera pas enregistrée dans ce fichier.');
-  if(!key?.trim()){message('Test non activé. Recharge la page pour saisir la clé publique Supabase.');}
-  else if(!key.trim().startsWith('sb_publishable_')&&!key.trim().startsWith('eyJ')){message('Utilise uniquement la clé publique Supabase (publishable ou anon), jamais la clé secrète.',true);}
-  else{
-    client=createClient(PROJECT_URL,key.trim(),{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+client = createClient(PROJECT_URL, PUBLIC_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  }
+});
     const {data:{user},error}=await client.auth.getUser();
     if(error&&error.name!=='AuthSessionMissingError')throw error;
     if(!user){message('Connecte-toi d’abord sur « Mon profil », puis reviens ici. Si ta session est déjà ouverte, recharge cette page.');}
