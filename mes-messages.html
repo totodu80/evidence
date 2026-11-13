@@ -91,6 +91,7 @@ async function changeBlock(block){
 $('block').onclick=()=>changeBlock(true);$('unblock').onclick=()=>changeBlock(false);
 async function load(){if(!client||!user)return;$('refresh').disabled=true;$('send').disabled=true;status('Chargement des membres et des messages…');try{
 const {data:messages,error:me}=await client.from('messages').select('id,expediteur_id,destinataire_id,contenu,cree_le').order('cree_le',{ascending:false}).limit(100);if(me)throw me;
+  messages.reverse();
 const {data:blocks,error:be}=await client.from('blocages').select('bloque_id');if(be)throw be;blockedIds=new Set((blocks||[]).map(b=>b.bloque_id));
 const {data:profiles,error:pe}=await client.from('profils').select('id,pseudo,profil_visible').eq('profil_visible',true).limit(100);if(pe)throw pe;
 names=new Map((profiles||[]).map(p=>[p.id,p.pseudo||'Membre']));
