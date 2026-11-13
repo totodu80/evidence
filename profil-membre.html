@@ -124,8 +124,10 @@ boutonMessage.style.padding = '12px 20px';
 boutonMessage.style.border = 'none';
 boutonMessage.style.borderRadius = '10px';
 boutonMessage.style.cursor = 'pointer';
-boutonMessage.disabled = true;
-boutonMessage.title = 'Messagerie bientôt disponible';
+boutonMessage.addEventListener('click', () => {
+  window.location.href =
+    'mes-messages.html?destinataire=' + encodeURIComponent(membreId);
+});
 zoneProfil.appendChild(boutonMessage);
     const retour = document.createElement('a');
 retour.href = 'decouvrir.html';
