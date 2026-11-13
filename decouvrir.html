@@ -38,6 +38,7 @@ async function loadProfiles(){
     
 for (const profile of data) {
   const card = document.createElement('article');
+  card.style.cursor = 'pointer';
   card.className = 'card';
 
   const name = document.createElement('h3');
