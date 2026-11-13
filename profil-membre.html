@@ -17,5 +17,79 @@
 <body>
   <h1>ÉVIDENCE 💛</h1>
   <h2>Profil du membre</h2>
+  <div id="informations-profil">
+  <p>Chargement du profil...</p>
+</div>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+    const supabaseUrl = 'https://igzexxjobstgsrmfqldg.supabase.co';
+    const supabaseKey = 'sb_publishable_WWC1UZCeMSZu1Yacawquew_MzPJWup_';
+    const client = createClient(supabaseUrl, supabaseKey);
+    const { data: { user }, error } = await client.auth.getUser();
+
+if (error || !user) {
+  document.getElementById('informations-profil').textContent =
+    'Connecte-toi pour consulter les profils.';
+}
+    const parametres = new URLSearchParams(window.location.search);
+const membreId = parametres.get('id');
+    if (!membreId) {
+  document.getElementById('informations-profil').textContent =
+    'Aucun profil sélectionné.';
+}
+    if (!user || !membreId) {
+  throw new Error('Consultation du profil impossible.');
+}
+    const { data: profil, error: erreurProfil } = await client
+  .from('profils')
+  .select('*')
+  .eq('id', membreId)
+  .eq('profil_visible', true)
+  .maybeSingle();
+    if (erreurProfil || !profil) {
+  document.getElementById('informations-profil').textContent =
+    'Ce profil est introuvable ou non visible.';
+  throw new Error('Profil inaccessible.');
+}
+    const { data: blocage, error: erreurBlocage } = await client
+  .rpc('sont_bloques', {
+    membre_a: user.id,
+    membre_b: membreId
+  });
+    if (erreurBlocage || blocage !== false) {
+  document.getElementById('informations-profil').textContent =
+    'Ce profil n’est pas accessible.';
+  throw new Error('Accès au profil refusé.');
+}
+    const zoneProfil = document.getElementById('informations-profil');
+zoneProfil.replaceChildren();
+
+const pseudo = document.createElement('h3');
+pseudo.textContent = profil.pseudo || 'Membre ÉVIDENCE';
+
+zoneProfil.appendChild(pseudo);
+    const region = document.createElement('p');
+region.textContent = '📍 Région : ' + (profil.region || 'Non renseignée');
+
+zoneProfil.appendChild(region);
+    const presentation = document.createElement('p');
+presentation.textContent = '❤️ Présentation : ' +
+  (profil.presentation || 'Non renseignée');
+
+zoneProfil.appendChild(presentation);
+    const interets = document.createElement('p');
+interets.textContent = '💛 Centres d’intérêt : ' +
+  (profil.centres_interet || 'Non renseignés');
+
+zoneProfil.appendChild(interets);
+    const retour = document.createElement('a');
+retour.href = 'decouvrir.html';
+retour.textContent = '← Retour aux membres';
+retour.style.color = '#D4AF37';
+retour.style.display = 'block';
+retour.style.marginTop = '30px';
+
+zoneProfil.appendChild(retour);
+</script>
 </body>
 </html>
