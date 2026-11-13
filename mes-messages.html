@@ -3,6 +3,39 @@
 <style>
 :root{font-family:Arial,sans-serif;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#091326,#1b3050);color:#f8f3e9;min-height:100vh}header{text-align:center;padding:30px 15px;border-bottom:1px solid #b99552}h1{color:#e5b65e;letter-spacing:6px;margin:0}header p{color:#e5c88d}main{max-width:920px;margin:35px auto;padding:0 18px}h2,h3{color:#e5b65e}a{color:#e5b65e}.panel{border:1px solid #9e7c43;border-radius:15px;background:#101f38;padding:22px;margin:18px 0}label{display:block;margin:12px 0 7px}input,textarea,select{width:100%;padding:12px;border-radius:8px;border:1px solid #b99552;background:#091326;color:white;font:inherit}textarea{min-height:110px;resize:vertical}button,.button{display:inline-block;background:#d6ae69;color:#091326;border:1px solid #d6ae69;padding:11px 16px;border-radius:8px;font-weight:bold;cursor:pointer;text-decoration:none;font:inherit}button:disabled{opacity:.55;cursor:not-allowed}.danger{background:#713647;border-color:#c8818b;color:white}.blocktools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:14px 0}.blocktools small{flex-basis:100%}.report-panel{margin-top:16px;padding:16px;border:1px solid #52617a;border-radius:10px;background:#142640}.report-panel[hidden]{display:none}.report-panel textarea{min-height:90px}.report-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.muted{color:#c9d0db}.toolbar{display:flex;flex-wrap:wrap;gap:12px}.notice{background:#263753;border-radius:8px;padding:12px;margin:15px 0;overflow-wrap:anywhere}.notice.error{background:#582c39}.message{border-bottom:1px solid #34445f;padding:14px 0;overflow-wrap:anywhere}.message:last-child{border:0}.meta{color:#d6ae69;font-size:13px;margin-bottom:8px}.body{white-space:pre-wrap;overflow-wrap:anywhere}small{color:#c9d0db}footer{text-align:center;padding:32px 16px;color:#c9d0db;font-size:13px}
 [hidden] { display: none !important; }
+
+.message {
+  border: 1px solid #D4AF37;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin: 12px 0;
+  background: #172944;
+}
+
+.message .meta {
+  color: #E5BD62;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.message .body {
+  color: #F8F3E9;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.message.outgoing {
+  background: #493e25;
+  border-color: #D4AF37;
+  margin-left: auto;
+  max-width: 80%;
+}
+
+.message.incoming {
+  background: #172f50;
+  border-color: #5279a8;
+  margin-right: auto;
+  max-width: 80%;
+}
 </style></head><body>
 <header><h1>ÉVIDENCE</h1><p>Une belle histoire commence ici 💗</p></header>
 <main><h2>Mes messages 💌</h2><p>Un espace de test pour échanger en privé entre membres.</p>
@@ -75,7 +108,8 @@ if(recipients.has(old))$('recipient').value=old;
   $('recipient').value = destinataireDepuisLien;
 }
 $('recipient').disabled=recipients.size===0;
-$('messages').replaceChildren();if(!messages?.length)addText($('messages'),'p','Aucun message pour le moment.');else for(const m of messages){const row=document.createElement('article');row.className='message';const outgoing=m.expediteur_id===user.id;const partner=outgoing?m.destinataire_id:m.expediteur_id;const label=outgoing?'Envoyé à ':'Reçu de ';addText(row,'div',label+(names.get(partner)||'Membre')+' · '+new Date(m.cree_le).toLocaleString('fr-FR'),'meta');addText(row,'div',m.contenu,'body');$('messages').append(row)}
+$('messages').replaceChildren();if(!messages?.length)addText($('messages'),'p','Aucun message pour le moment.');else for(const m of messages){const row=document.createElement('article');row.className='message';const outgoing=m.expediteur_id===user.id;row.classList.add(outgoing?'outgoing':'incoming');const partner=outgoing?m.destinataire_id:m.expediteur_id;const label=outgoing?'Envoyé à ':'Reçu de ';addText(row,'div',label+(names.get(partner)||'Membre')+' · '+new Date(m.cree_le).toLocaleString('fr-FR'),'meta');addText(row,'div',m.contenu,'body');$('messages').append(row)}
+ 
 updateBlockUI();status((messages?.length||0)+' message(s) chargé(s). Seuls tes échanges sont demandés à Supabase.');
 }catch(e){status('Erreur : '+errorText(e),true)}finally{$('refresh').disabled=false}}
 $('refresh').onclick=load;
