@@ -16,6 +16,7 @@ import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2
 const PROJECT_URL='https://igzexxjobstgsrmfqldg.supabase.co';
 const PROJECT_KEY='sb_publishable_WWC1UZCeMSZu1Yacawquew_MzPJWup_';
 const $=id=>document.getElementById(id);let client,user;let names=new Map();let blockedIds=new Set();let recipients=new Map();
+ const destinataireDepuisLien = new URLSearchParams(window.location.search).get('destinataire');
 function status(s,error=false){$('status').textContent=s;$('status').className='notice'+(error?' error':'');}
 function errorText(e){return e?.message||String(e)}
 function addText(parent,tag,txt,cls){const el=document.createElement(tag);el.textContent=txt;if(cls)el.className=cls;parent.append(el);return el;}
@@ -70,6 +71,9 @@ for(const m of messages||[]){if(m.destinataire_id===user.id && m.expediteur_id!=
 const old=$('recipient').value;$('recipient').replaceChildren();const initial=document.createElement('option');initial.value='';initial.textContent='Choisir un membre';$('recipient').append(initial);
 for(const [id,name] of recipients){const option=document.createElement('option');option.value=id;option.textContent=name;$('recipient').append(option)}
 if(recipients.has(old))$('recipient').value=old;
+ if (destinataireDepuisLien && recipients.has(destinataireDepuisLien)) {
+  $('recipient').value = destinataireDepuisLien;
+}
 $('recipient').disabled=recipients.size===0;
 $('messages').replaceChildren();if(!messages?.length)addText($('messages'),'p','Aucun message pour le moment.');else for(const m of messages){const row=document.createElement('article');row.className='message';const outgoing=m.expediteur_id===user.id;const partner=outgoing?m.destinataire_id:m.expediteur_id;const label=outgoing?'Envoyé à ':'Reçu de ';addText(row,'div',label+(names.get(partner)||'Membre')+' · '+new Date(m.cree_le).toLocaleString('fr-FR'),'meta');addText(row,'div',m.contenu,'body');$('messages').append(row)}
 updateBlockUI();status((messages?.length||0)+' message(s) chargé(s). Seuls tes échanges sont demandés à Supabase.');
