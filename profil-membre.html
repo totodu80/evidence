@@ -116,6 +116,17 @@ interets.textContent = '💛 Centres d’intérêt : ' +
   (profil.centres_interet || 'Non renseignés');
 
 zoneProfil.appendChild(interets);
+    const boutonMessage = document.createElement('button');
+boutonMessage.textContent = '💌 Envoyer un message';
+boutonMessage.style.backgroundColor = '#D4AF37';
+boutonMessage.style.color = '#0b1736';
+boutonMessage.style.padding = '12px 20px';
+boutonMessage.style.border = 'none';
+boutonMessage.style.borderRadius = '10px';
+boutonMessage.style.cursor = 'pointer';
+boutonMessage.disabled = true;
+boutonMessage.title = 'Messagerie bientôt disponible';
+zoneProfil.appendChild(boutonMessage);
     const retour = document.createElement('a');
 retour.href = 'decouvrir.html';
 retour.textContent = '← Retour aux membres';
