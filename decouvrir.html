@@ -81,8 +81,10 @@ for (const profile of data) {
 
       image.src = url;
       image.alt = 'Photo approuvée du membre';
-      image.style.width = '150px';
-      image.style.borderRadius = '10px';
+      image.style.width = '220px';
+      image.style.height = '220px';
+      image.style.objectFit = 'cover';
+      image.style.borderRadius = '15px';
       image.style.margin = '8px';
       image.onload = () => URL.revokeObjectURL(url);
 
