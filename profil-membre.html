@@ -68,6 +68,40 @@ const pseudo = document.createElement('h3');
 pseudo.textContent = profil.pseudo || 'Membre ÉVIDENCE';
 
 zoneProfil.appendChild(pseudo);
+    const zonePhoto = document.createElement('div');
+zonePhoto.style.margin = '20px auto';
+
+zoneProfil.appendChild(zonePhoto);
+    const { data: photos, error: erreurPhotos } = await client
+  .from('photos_profils')
+  .select('chemin, est_principale')
+  .eq('membre_id', membreId)
+  .eq('statut', 'approuvee')
+  .order('est_principale', { ascending: false })
+  .limit(1);
+    if (!erreurPhotos && photos && photos.length > 0) {
+  const photo = photos[0];
+
+  const { data: fichier, error: erreurImage } = await client.storage
+    .from('photos-profils')
+    .download(photo.chemin);
+if (!erreurImage && fichier) {
+  const image = document.createElement('img');
+  const url = URL.createObjectURL(fichier);
+
+  image.src = url;
+  image.alt = 'Photo approuvée du membre';
+  image.style.width = '220px';
+  image.style.height = '220px';
+  image.style.objectFit = 'cover';
+  image.style.borderRadius = '15px';
+  image.style.border = '2px solid #D4AF37';
+
+  image.onload = () => URL.revokeObjectURL(url);
+
+  zonePhoto.appendChild(image);
+}
+}
     const region = document.createElement('p');
 region.textContent = '📍 Région : ' + (profil.region || 'Non renseignée');
 
