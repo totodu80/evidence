@@ -331,6 +331,49 @@ await afficherMesPhotos();
       }
     };
 
+$('signUp').onclick = async () => {
+  if (!client) {
+    alert("Supabase n'est pas encore connecté.");
+    return;
+  }
+
+  const email = $('email').value.trim();
+  const password = $('password').value;
+
+  if (!email || !password) {
+    alert("Entre ton adresse e-mail et un mot de passe.");
+    return;
+  }
+
+  if (password.length < 8) {
+    alert("Le mot de passe doit contenir au moins 8 caractères.");
+    return;
+  }
+
+  $('signUp').disabled = true;
+
+  try {
+    const { data, error } = await client.auth.signUp({
+      email,
+      password
+    });
+
+    if (error) throw error;
+
+    $('password').value = '';
+
+    if (data.session) {
+      await showUser(data.user);
+    } else {
+      alert("Compte créé ! Vérifie tes e-mails pour confirmer ton inscription.");
+    }
+  } catch (error) {
+    report(error);
+  } finally {
+    $('signUp').disabled = false;
+  }
+};
+
     $('save').onclick = async () => {
       if (!client || !user) return;
 
